@@ -1,6 +1,8 @@
 # Content Summarization 
 It is a LLM based text summarizer, built with the help of the Langchain framework. 
 
+# Demo
+[demo-content-summarization.webm](https://github.com/user-attachments/assets/a609f693-a1f7-4ab9-836c-c0c060c41d6e)
 
 # How it works 
 
