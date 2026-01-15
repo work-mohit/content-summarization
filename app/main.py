@@ -9,6 +9,9 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_community.document_loaders import YoutubeLoader, UnstructuredURLLoader
 
+import logging
+logging.getLogger("streamlit").setLevel(logging.ERROR)
+
 # from pathlib import Path
 
 # not needed since we are taking the api keys from the user
@@ -22,6 +25,11 @@ OPENAI_MDDEL = "gpt-4o-mini"
 GROQ_MDDEL = "llama3-70b-8192"
 ANTHROPIC_MDDEL = "claude-haiku-4.5"
 GEMINI_MDDEL = "gemini-2.5"
+
+
+
+class TranscriptNotAvailableError(Exception):
+    pass
 
 @st.cache_resource
 def load_model(provider, api_key):
@@ -86,8 +94,10 @@ def fetch_youtube_transcript(url):
     try: 
         loader = YoutubeLoader.from_youtube_url(url)
         return loader.load()
-    except IOError as e:
-        raise IOError("Youtube Video doesn't have english transcript")
+    except Exception:
+        raise TranscriptNotAvailableError(
+            "⚠️ This YouTube video does not have an English transcript available."
+        )
 
 def fetch_url_content(url):
     loader = UnstructuredURLLoader(urls=[url],ssl_verify=False)
@@ -102,15 +112,9 @@ def get_content(url):
 
     :param url: A valid link will be given as input like, a youtube video link or a website that you want to summarize.
     """
-    try: 
-        content_document = None
-        if "youtube.com" in url:
-            content_document = fetch_youtube_transcript(url)
-        else:
-            content_document = fetch_url_content(url)
-        return content_document
-    except Exception as e:
-        st.error(f"Exception: {e}")
+    if "youtube.com" in url:
+        return fetch_youtube_transcript(url)
+    return fetch_url_content(url)
 
  
 def get_prompt():
@@ -163,14 +167,9 @@ def get_prompt():
     
 
 def handle_summarization(model, content):
-    try:
-        prompt = get_prompt()
-        print(prompt)
-        chain = prompt | model | StrOutputParser()
-        result = chain.invoke({"content":content})
-        return result
-    except Exception as e:
-        st.exception(f"Exception {e}")
+    prompt = get_prompt()
+    chain = prompt | model | StrOutputParser()
+    return chain.invoke({"content": content})
 
 
 def summarize(provider, api_key, url):
@@ -192,8 +191,14 @@ def summarize(provider, api_key, url):
         content = get_content(url)
         summarized_text = handle_summarization(model, content)
         st.success(summarized_text)
+    except TranscriptNotAvailableError as e:
+        st.warning(str(e))   
+
     except ValueError as e:
-        st.error(f"Error: {e}")  
+        st.error(str(e))
+
+    except Exception:
+        st.error("Something went wrong. Please try again later.")  
 
 def main():
     try: 
