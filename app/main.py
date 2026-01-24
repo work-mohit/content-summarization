@@ -203,7 +203,7 @@ def summarize(provider, api_key, url):
 def main():
     try: 
         st.set_page_config(page_title="Content Summarizer")
-        st.title("An LLM Applicaton for Content Summarization")
+        st.title("An LLM Application for Content Summarization")
 
         st.subheader("Summarize URL")
         url = st.text_input("Paste here")
